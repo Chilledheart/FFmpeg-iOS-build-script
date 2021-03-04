@@ -21,6 +21,7 @@ THIN=`pwd`/"thin"
 #FDK_AAC=`pwd`/../fdk-aac-build-script-for-iOS/fdk-aac-ios
 
 CONFIGURE_FLAGS="--enable-cross-compile --disable-debug --disable-programs \
+                 --enable-neon --enable-optimizations --enable-small \
                  --disable-doc --enable-pic"
 
 if [ "$X264" ]
@@ -36,7 +37,7 @@ fi
 # avresample
 #CONFIGURE_FLAGS="$CONFIGURE_FLAGS --enable-avresample"
 
-ARCHS="arm64 armv7 x86_64 i386"
+ARCHS="arm64 x86_64"
 
 COMPILE="y"
 LIPO="y"
@@ -97,10 +98,11 @@ then
 		cd "$SCRATCH/$ARCH"
 
 		CFLAGS="-arch $ARCH"
-		if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]
+		if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" -o "$ARCH" = "arm64" ]
 		then
 		    PLATFORM="iPhoneSimulator"
 		    CFLAGS="$CFLAGS -mios-simulator-version-min=$DEPLOYMENT_TARGET"
+		    CONFIGURE_FLAGS="$CONFIGURE_FLAGS --disable-asm"
 		else
 		    PLATFORM="iPhoneOS"
 		    CFLAGS="$CFLAGS -mios-version-min=$DEPLOYMENT_TARGET -fembed-bitcode"
@@ -112,6 +114,8 @@ then
 
 		XCRUN_SDK=`echo $PLATFORM | tr '[:upper:]' '[:lower:]'`
 		CC="xcrun -sdk $XCRUN_SDK clang"
+		AR="xcrun -sdk $XCRUN_SDK ar"
+		RANLIB="xcrun -sdk $XCRUN_SDK ranlib"
 
 		# force "configure" to use "gas-preprocessor.pl" (FFmpeg 3.3)
 		if [ "$ARCH" = "arm64" ]
@@ -139,13 +143,15 @@ then
 		    --arch=$ARCH \
 		    --cc="$CC" \
 		    --as="$AS" \
+		    --ar="$AR" \
+		    --ranlib="$RANLIB" \
 		    $CONFIGURE_FLAGS \
 		    --extra-cflags="$CFLAGS" \
 		    --extra-ldflags="$LDFLAGS" \
 		    --prefix="$THIN/$ARCH" \
 		|| exit 1
 
-		make -j3 install $EXPORT || exit 1
+		make -j8 V=1 install $EXPORT || exit 1
 		cd $CWD
 	done
 fi

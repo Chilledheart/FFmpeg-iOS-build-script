@@ -4,7 +4,7 @@ set -e
 
 # directories
 SCRATCH=`pwd`/"scratch"
-ARCHS="arm64 armv7 i386 x86_64"
+ARCHS="arm64 x86_64"
 
 FFMPEG_VERSION="4.3.2"
 export FFMPEG_VERSION
